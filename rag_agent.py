@@ -6,6 +6,7 @@ a single-pass RAG chain (dynamic system prompt + similarity search).
 Optional env for embedding rate limits (Gemini free tier is strict):
   EMBED_BATCH_SIZE (default 12), EMBED_BATCH_PAUSE_SEC (default 22)
   EMBED_BATCH_MAX_RETRIES (default 8), EMBED_RETRY_WAIT_SEC (default 60)
+  RETRIEVE_MAX_RETRIES (default 6) — for similarity_search / embed_query
 """
 
 from __future__ import annotations
@@ -55,10 +56,49 @@ FORTUNE_DEV_POSTS = (
 )
 
 
+def _embedding_error_is_transient(err: GoogleGenerativeAIError) -> bool:
+    msg = str(err).lower()
+    return any(
+        s in msg
+        for s in (
+            "resource_exhausted",
+            "429",
+            "quota",
+            "rate",
+            "500",
+            "internal",
+            "unavailable",
+            "deadline",
+        )
+    )
+
+
+def similarity_search_with_retry(query: str, k: int = 2):
+    """similarity_search embeds the query; Gemini sometimes returns 429/500 — retry."""
+    max_retries = int(os.environ.get("RETRIEVE_MAX_RETRIES", "6"))
+    wait = float(os.environ.get("EMBED_RETRY_WAIT_SEC", "60"))
+    last_err: GoogleGenerativeAIError | None = None
+    for attempt in range(max_retries + 1):
+        try:
+            return vector_store.similarity_search(query, k=k)
+        except GoogleGenerativeAIError as err:
+            last_err = err
+            if not _embedding_error_is_transient(err) or attempt >= max_retries:
+                raise
+            print(
+                f"  Retrieve embed transient error, sleeping {wait:.0f}s "
+                f"(retry {attempt + 1}/{max_retries})...",
+                flush=True,
+            )
+            time.sleep(wait)
+    assert last_err is not None
+    raise last_err
+
+
 @tool(response_format="content_and_artifact")
 def retrieve_context(query: str):
     """Retrieve information to help answer a query."""
-    retrieved_docs = vector_store.similarity_search(query, k=2)
+    retrieved_docs = similarity_search_with_retry(query, k=2)
     serialized = "\n\n".join(
         (f"Source: {doc.metadata}\nContent: {doc.page_content}")
         for doc in retrieved_docs
@@ -107,17 +147,10 @@ def index_corpus() -> None:
                 document_ids.extend(vector_store.add_documents(documents=batch))
                 break
             except GoogleGenerativeAIError as err:
-                msg = str(err).lower()
-                is_rate = (
-                    "resource_exhausted" in msg
-                    or "429" in msg
-                    or "quota" in msg
-                    or "rate" in msg
-                )
-                if not is_rate or attempt >= max_retries:
+                if not _embedding_error_is_transient(err) or attempt >= max_retries:
                     raise
                 print(
-                    f"  Embedding rate limit, sleeping {rate_wait:.0f}s "
+                    f"  Embedding transient error, sleeping {rate_wait:.0f}s "
                     f"(retry {attempt + 1}/{max_retries})...",
                     flush=True,
                 )
@@ -168,7 +201,7 @@ def run_rag_chain_demo() -> None:
     @dynamic_prompt
     def prompt_with_context(request: ModelRequest) -> str:
         last_query = request.messages[-1].text
-        retrieved_docs = vector_store.similarity_search(last_query, k=4)
+        retrieved_docs = similarity_search_with_retry(last_query, k=4)
         docs_content = "\n\n".join(
             f"<passage source={doc.metadata!r}>\n{doc.page_content}\n</passage>"
             for doc in retrieved_docs
