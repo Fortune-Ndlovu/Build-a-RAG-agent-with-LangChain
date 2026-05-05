@@ -1,0 +1,73 @@
+# Gold set for strategy comparison. Tune expected_answer_substring after first ingest
+# if your phrasing in the live posts drifts.
+- id: nlp-conda
+  question: What conda environment name does the intelligent support ticket routing post recommend creating?
+  expected_answer_substring: ticket
+  expected_source_url_contains: intelligent-support-ticket-routing
+  category: factual
+
+- id: cnn-class
+  question: What Python class name is used for the CNN model in the image classification article?
+  expected_answer_substring: ConvNet
+  expected_source_url_contains: image-classification-and-convolutional-neural-networks
+  category: factual
+
+- id: mnist-accuracy
+  question: What approximate test accuracy does the CNN MNIST article report on the test set?
+  expected_answer_substring: "9"
+  expected_source_url_contains: cnns
+  category: factual
+
+- id: multi-post-tools
+  question: Which topics do the two indexed articles primarily cover — NLP routing versus CNN image classification — and name one library mentioned in each post if stated?
+  expected_answer_substring: classification
+  expected_source_url_contains: fortune-ndlovu
+  category: multi-hop
+
+- id: negative-out-of-scope
+  question: What Kubernetes operator pattern does the author's DEV feed recommend for production clusters?
+  expected_answer_substring: do not know
+  expected_source_url_contains: ""
+  category: negative
+
+- id: routing-task
+  question: What kind of real-world task does the intelligent support ticket routing article frame as the motivating problem?
+  expected_answer_substring: ticket
+  expected_source_url_contains: intelligent-support-ticket-routing
+  category: factual
+
+- id: cnn-framework
+  question: Which deep learning framework does the CNN MNIST tutorial use?
+  expected_answer_substring: PyTorch
+  expected_source_url_contains: cnns
+  category: factual
+
+- id: list-scope
+  question: Based only on retrieved passages, does the feed describe deploying models to AWS SageMaker?
+  expected_answer_substring: do not know
+  expected_source_url_contains: ""
+  category: negative
+
+- id: nlp-data-prep
+  question: What kind of raw organizational data does the NLP routing article discuss preparing before modeling?
+  expected_answer_substring: ticket
+  expected_source_url_contains: intelligent-support-ticket-routing
+  category: factual
+
+- id: image-input-shape
+  question: What MNIST image dimensions does the CNN article assume when defining tensors?
+  expected_answer_substring: "28"
+  expected_source_url_contains: cnns
+  category: factual
+
+- id: multi-hop-conda-and-accuracy
+  question: First, what conda-related naming convention does the NLP routing post suggest? Second, does the CNN article report validation versus test metrics separately?
+  expected_answer_substring: conda
+  expected_source_url_contains: dev.to
+  category: multi-hop
+
+- id: cnn-dataset-name
+  question: Which standard image dataset is used in the CNN article's walkthrough?
+  expected_answer_substring: MNIST
+  expected_source_url_contains: cnns
+  category: factual

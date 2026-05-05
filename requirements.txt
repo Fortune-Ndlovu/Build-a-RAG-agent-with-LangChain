@@ -5,5 +5,14 @@ langchain-text-splitters
 langchain-google-genai
 langchain[google-genai]
 langgraph
+langgraph-checkpoint-sqlite
+langchain-ollama
+langchain-chroma
+pydantic-settings
+langsmith
 beautifulsoup4
 python-dotenv
+requests
+pyyaml
+tabulate
+rich
